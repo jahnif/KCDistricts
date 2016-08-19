@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>King County Districts Lookup Tool</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <style>
+    body {
+        padding: 20px;
+    }
+    </style>
+    <script>
+    function clicked() {
+        var address = $('#address').val().replace(" ", "%20");
+        var xyLookup = 'http://gismaps.kingcounty.gov/arcgis/rest/services/Address/Address_Points_locator/GeocodeServer/findAddressCandidates?Street=' + address + '&f=json&outSR=%7B"wkid"%3A102100%7D';
+
+        var x, y, finalURL, cd, ld, sccd;
+
+        $.ajax({
+            type: 'GET',
+            url: xyLookup,
+            dataType: "json",
+            success: function(data) {
+                x = data.candidates[0].location.x;
+                y = data.candidates[0].location.y;
+                finalURL = 'http://gismaps.kingcounty.gov/arcgis/rest/services/Districts/KingCo_Electoral_Districts/MapServer/identify?f=json&geometry=%7B%22points%22%3A%5B%5B' + x + '%2C' + y + '%5D%5D%2C%22spatialReference%22%3A%7B%22wkid%22%3A102100%7D%7D&tolerance=3&returnGeometry=false&mapExtent=%7B%22xmin%22%3A-13619782.418629337%2C%22ymin%22%3A6039789.400397604%2C%22xmax%22%3A-13615755.142701454%2C%22ymax%22%3A6042646.234329838%2C%22spatialReference%22%3A%7B%22wkid%22%3A102100%7D%7D&imageDisplay=400%2C400%2C96&geometryType=esriGeometryMultipoint&sr=102100&layers=all%3A0%2C1%2C2%2C3%2C4';
+
+                $.ajax({
+                    type: 'GET',
+                    url: finalURL,
+                    dataType: "json",
+                    success: function(data) {
+                        $("#kccd, #cd, #ld, #sccd").text("");
+                        // $('#info').append(xyLookup + '<br><br>' + finalURL + '<br><br>');
+                        var districts = data.results;
+                        $.each(districts, function(i, val) {
+                            if (districts[i].layerName == "King County Council Districts") {
+                                $('#kccd').append(districts[i].value);
+                            } else if (districts[i].layerName == "Congressional Districts") {
+                                $('#cd').append(districts[i].value);
+                            } else if (districts[i].layerName == "Legislative Districts") {
+                                $('#ld').append(districts[i].value);
+                            } else if (districts[i].layerName == "Seattle Council District") {
+                                $('#sccd').append(districts[i].attributes.OBJECTID);
+                            }
+                        });
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.log(jqXHR, textStatus, errorThrown);
+                    }
+                });
+            },
+            error: function(jqXHR, textStatus, errorThrown) {
+                console.log(jqXHR, textStatus, errorThrown);
+            }
+        });
+    }
+    </script>
+</head>
+
+<body>
+    <h1>King County Districts Lookup Tool</h1>
+    <br>
+    <form onsubmit="return false;">
+        <input type="enter your address" id="address" placeholder="Enter your address">
+        <input type="submit" value="Find My Districts!" onclick="clicked()">
+    </form>
+    <div id="info"></div>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>District</th>
+                <th>#</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>King County Council</td>
+                <td id="kccd"></td>
+            </tr>
+            <tr>
+                <td>Congressional</td>
+                <td id="cd"></td>
+            </tr>
+            <tr>
+                <td>Legislative</td>
+                <td id="ld"></td>
+            </tr>
+            <tr>
+                <td>Seattle City Council</td>
+                <td id="sccd"></td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+
+</html>
